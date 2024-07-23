@@ -4,8 +4,10 @@ import com.alibaba.excel.util.IntUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zsp.zspoj.RabbitMq.MyMessageProducer;
 import com.zsp.zspoj.common.ErrorCode;
 import com.zsp.zspoj.constant.CommonConstant;
+import com.zsp.zspoj.constant.MqConstant;
 import com.zsp.zspoj.exception.BusinessException;
 import com.zsp.zspoj.judge.JudgeService;
 import com.zsp.zspoj.model.dto.question.QuestionQueryRequest;
@@ -60,6 +62,9 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
     @Lazy
     private JudgeService judgeService;
 
+    @Resource
+    private MyMessageProducer myMessageProducer;
+
 
 
     /**
@@ -105,9 +110,11 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
         }
         //执行判题服务
         Long questionSubmitId = questionSubmit.getId();
-        CompletableFuture.runAsync(() -> {
-            judgeService.doJudge(questionSubmitId);
-        });
+//        CompletableFuture.runAsync(() -> {
+//            judgeService.doJudge(questionSubmitId);
+//        });
+        //消息队列执行判题服务
+        myMessageProducer.sendMessage(MqConstant.DIRECT_EXCHANGE, "oj", String.valueOf(questionSubmitId));
         return questionSubmitId;
     }
 
